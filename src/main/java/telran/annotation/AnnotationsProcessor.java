@@ -1,9 +1,11 @@
 package telran.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.*;
 
 import telran.validation.anatation.Pattern;
+import telran.validation.anatation.Validation;
 
 public class AnnotationsProcessor {
 	public static final String NO_ID_MESSAGE = "A class has to have field annotated by Id";
@@ -33,13 +35,48 @@ public class AnnotationsProcessor {
 		return res;
 	}
 
+//	public static List<String> validate(Object obj) {
+//		Class<?> clazz = obj.getClass();
+//		Field[] fields = clazz.getDeclaredFields();
+//		
+//		return Arrays.stream(fields)
+//				.filter(f -> {
+//					Annotation[] annotations = f.getAnnotations();
+//					return Arrays.stream(annotations).anyMatch(a -> a.annotationType().isAnnotationPresent(Validation.class));
+//				})
+//				.map(f -> getMessage(f, obj))
+//				.filter(s -> !s.isEmpty()).toList();
+//	}
+
 	public static List<String> validate(Object obj) {
 		Class<?> clazz = obj.getClass();
 		Field[] fields = clazz.getDeclaredFields();
-		return Arrays.stream(fields)
-				.filter(f -> f.isAnnotationPresent(Pattern.class))
-				.map(f -> getMessage(f, obj))
-				.filter(s -> !s.isEmpty()).toList();
+
+		List<String> errorMessages = new ArrayList<>();
+		for (Field field : fields) {
+			validateField(field, errorMessages, obj);
+		}
+		return errorMessages;
+	}
+
+	private static void validateField(Field field, List<String> errorMessages, Object obj) {
+		Annotation[] annotations = field.getAnnotations();
+		List<Annotation> validationAnnotations = Arrays.stream(annotations)
+				.filter(a -> a.annotationType().isAnnotationPresent(Validation.class)).toList();
+		validationAnnotations.forEach(a ->  validateAnnotation(a, field, errorMessages, obj));
+		
+
+	}
+
+	private static void validateAnnotation(Annotation a, Field field, List<String> errorMessages, Object obj) {
+		// TODO Auto-generated method stub
+		// TODO define Validator class name according to the Annotation name
+		System.out.println(a.annotationType().getName()+"Validator");
+		String message = getMessage(field, obj);
+		if(!message.isEmpty()) {
+			errorMessages.add(message);
+		}
+		
 	}
 
 	private static String getMessage(Field field, Object obj) {
